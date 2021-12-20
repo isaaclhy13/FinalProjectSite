@@ -1,0 +1,540 @@
+<!-- This example is from Alan Villalobos-->
+<!DOCTYPE html>
+<meta charset="utf-8">
+  <script src="https://d3js.org/d3.v3.min.js"></script>
+  <script>
+    var d3v3 = window.d3;
+    window.d3 = null;
+  </script>
+
+  <script src="http://d3js.org/d3.v4.min.js"></script>
+  <script>
+    var d3v4 = window.d3;
+    window.d3 = null;
+  </script>
+
+<script src="http://d3js.org/d3.v6.min.js"></script>
+<script>
+  d3v6 = d3
+</script>
+<script src="https://www.unpkg.com/@tidyjs/tidy/dist/umd/tidy.min.js"></script>
+
+
+  <body style="background-color: #FEFEFE; padding-left: 1.5vw; flex-direction: row; display: flex;">
+    <div style="width:26vw; max-height: 100vh; position: relative;">
+      <div>
+        <h2>Why education?</h2>
+        <p>We believe eduation is one of the most important pillars in this country. And for students to receive good education, we have to have good teachers. Public school teacher shortageis a problem in Wisconsin and many other states. 
+        The lack of funding is what caused teachers to not want to work for public schools. Therefore, we want to make a visualizaiton that allows poeple to acknowledge this problem.
+        </p>
+      </div>
+      <div>
+        <h2>Our Solution</h2>
+        <p>Our visualizaiton focued on three aspects, which are demographic, average annual salary and race. We hope by comparing and visualzing these data, we can shine light into the aspects and show how urgent this matter is.
+        </p>
+      </div>
+      <div>
+        <h4 >Average anuual salary of public school teachers</h4>
+        <svg id="svg" width="26vw" height="40vh" ></svg>
+      </div>
+    </div>
+    <div style="width:40vw; max-height: 100vh; position: relative;">
+      <div style="width: 100%; position: absolute; height: 10vh; text-align: center;">
+        <h3>Average public school pay in 2013</h3>
+      </div>
+     
+      <div id= "map_div" style="width: 5vw; height: 5vh; position:absolute; color:black">
+           
+      </div>
+      <svg id="map" width="40vw" height="80vh" ></svg>
+    </div>
+    <div style="width: 33vw; height: 100vh;">
+      <div style="text-align: center;">
+        <h2>Recent average pay by catergory</h2>
+        <svg id="svg1" width="33vw" height="40vh" ></svg>
+        <label>Choose data type:</label> 
+        <select id="selectButton" >
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Bilingual">Bilingual</option>
+          <option value="Unilingual">Monolingual</option>
+        </select>
+      </div> 
+      <img src="Same_Page/img.jpg" width="30vw" height="25vh" style="width: 28vw; height: 33vh; margin-top: 2vh;"/>
+      <a href="Same_Page/index1.html">
+        <h3>
+          Check out a more comprehensive chart on Race!
+        </h3>
+      
+      </a>
+    </div>
+  </div>
+  
+</body>
+
+
+ 
+<style type="text/css">
+  /* On mouse hover, lighten state color */
+  #map_path:hover {
+    fill-opacity: 0.5;
+  }
+
+  /* Style for Custom Tooltip */
+  #map_div.tooltip {   
+    position: absolute;           
+    text-align: center;           
+    width: 40px;                  
+    height: 8px;                 
+    padding: 2px;             
+    font: 8px sans-serif;        
+    background: white;   
+    border: 0px;      
+    border-radius: 8px;           
+    pointer-events: none;         
+  }
+          
+  /* Legend Font Style */
+
+          
+  /* Legend Position Style */
+  .legend {
+    position:absolute;
+    left:500px;
+    top:350px;
+  }
+</style>
+
+<script>
+//Slider 
+
+
+
+//map
+var map_width = -450;
+var map_height = 2000;
+
+// D3 Projection
+var projection = d3v3.geo.albersUsa()
+				   .translate([map_width/2, map_height/2])    
+				   .scale([6000]);         
+
+var map_path = d3v3.geo.path()               
+		  	 .projection(projection);
+
+var legendText = ["Cities Lived", "States Lived", "States Visited", "Nada"];
+
+//Create SVG element and append map to the SVG
+var map_svg = d3v3.select("#map");
+		
+
+var map_color = d3v3.scale.linear()
+			  .range(["rgb(255,255,255)","rgb(255,0,0)"]);
+        
+// Append Div for tooltip to SVG
+var map_div = d3v3.select("#map_div")
+    		.attr("class", "tooltip")               
+    		.style("opacity", 1);
+
+// Load in my states data! // setting the range of the input data
+
+// Load GeoJSON data and merge with states data
+d3v3.csv('data2010.csv', function(data) {
+
+	map_color.domain([40000, 60000])
+
+d3v3.json("counties_final.json", function(json) {
+
+	for (var i =0; i<data.length; i++) {
+
+		var dataCounty = data[i].county
+
+		var dataPay = data[i].pay;
+
+		for (var j=0;j<json.features.length; j++) {
+			var jsonCounty = json.features[j].properties.NAME;
+
+			if (dataCounty == jsonCounty) {
+				json.features[j].properties.LSAD = dataPay
+				// console.log(json.features)
+
+				break;
+			}
+		}
+	}
+
+	map_svg.selectAll("path")
+		.data(json.features)
+		.enter().append("path")
+		.attr("d", map_path)
+		.style('stroke', '#fff')
+		.style('stroke-width', '0.5')
+		.style('fill', function(d) {
+			var map_value = d.properties.LSAD;
+
+			if (map_value) {
+				return map_color(map_value);
+			} else {
+				return 'rgb(213,222,217)';
+			}
+		})
+		.on("mouseover", function(d) {      
+    		map_div.transition()        
+      	   .duration(50)      
+           	.style("opacity", .8)
+             .style("background-color", "#FEC357")
+          
+             
+         map_div.text("County : " + d.properties.NAME + "    " + "Pay : " +  d.properties.LSAD)
+           .style("left", (d3v3.event.pageX - 500) + "px")     
+           .style("top", (d3v3.event.pageY) + "px")
+           .style("font-size", 20) 
+		})
+		.on("mouseout", function(d) {
+			map_div.transition()
+				.attr("opacity", 0);
+       
+		});
+	})	
+});
+</script>
+  <!-- <script src="bar.js"></script> -->
+  <script>
+    let male_total2009 = 0;
+    let male_total2010 = 0;
+    let male_total2011 = 0;
+    let male_total2012 = 0;
+    let male_length2009 = 0;
+    let male_length2010 = 0;
+    let male_length2011 = 0;
+    let male_length2012 = 0;
+    let female_total2009 = 0;
+    let female_total2010 = 0;
+    let female_total2011 = 0;
+    let female_total2012 = 0;
+    let female_length2009 = 0;
+    let female_length2010 = 0;
+    let female_length2011 = 0;
+    let female_length2012 = 0;
+
+    let bilingual_total = 0
+    let bilingual_length = 0
+    let yes_bilingual_total = 0
+    let yes_bilingual_length = 0
+    var matrix = [
+     {Year: 2016, "Average Salary": 58450, sex: "0.166%" },
+     {Year: 2017, "Average Salary": 58900, sex: "0.770%" },
+     {Year: 2018, "Average Salary": 59000, sex: "0.170%" },
+     {Year: 2019, "Average Salary": 59176, sex: "0.298%" },
+     {Year: 2020, "Average Salary": 59300, sex: "0.210%" },
+     {Year: 2021, "Average Salary": 59581, sex: "0.474%" },
+
+    ];
+
+    var tr = d3.select(".objecttable tbody")
+     .selectAll("tr")
+     .data(matrix)
+     .enter().append("tr");
+
+    var td = tr.selectAll("td")
+     .data(function(d, i) { return Object.values(d); })
+     .enter().append("td")
+       .text(function(d) { return d; });
+
+   
+    // d3.csv("all_data_08-16.csv", function (data){
+      
+    //   for(var i = 0; i < data.length; i++){
+    //     if((data[i].Bilingual == "N" && data[i].TotSalary != 0)){
+    //       bilingual_total += data[i].TotSalary / 1000;
+    //       bilingual_length++;
+    //     }
+    //     if((data[i].Bilingual == "" && data[i].TotSalary != 0)){
+    //       yes_bilingual_total += data[i].TotSalary / 1000;
+    //       yes_bilingual_length++;
+    //     }
+    //     if((data[i].YearSession == "2009" && data[i].TotSalary != 0) && data[i].Gndr == "M" ){
+    //       male_total2009 += data[i].TotSalary / 1000;
+    //       male_length2009++;
+    //     }
+    //     else if((data[i].YearSession == "2009" && data[i].TotSalary != 0) && data[i].Gndr == "F" ){
+    //       female_total2009 += data[i].TotSalary / 1000;
+    //       female_length2009++;
+    //     }
+    //     else if(data[i].YearSession == "2010" && data[i].TotSalary != 0 && data[i].Gndr == "M" ){
+    //       male_total2010 += data[i].TotSalary / 1000;
+    //       male_length2010++;
+    //     }
+    //     else if((data[i].YearSession == "2010" && data[i].TotSalary != 0) && data[i].Gndr == "F" ){
+    //       female_total2010 += data[i].TotSalary / 1000;
+    //       female_length2010++;
+    //     }
+    //     else if(data[i].YearSession == "2011" && data[i].TotSalary != 0 && data[i].Gndr == "M" ){
+    //       male_total2011 += data[i].TotSalary / 1000;
+    //       male_length2011++;
+    //     }
+    //     else if((data[i].YearSession == "2011" && data[i].TotSalary != 0) && data[i].Gndr == "F" ){
+    //       female_total2011 += data[i].TotSalary / 1000;
+    //       female_length2011++;
+    //     }
+    //     else if(data[i].YearSession == "2012" && data[i].TotSalary != 0 && data[i].Gndr == "M" ){
+    //       male_total2012 += data[i].TotSalary / 1000;
+    //       male_length2012++;
+    //     }
+    //     else if((data[i].YearSession == "2012" && data[i].TotSalary != 0) && data[i].Gndr == "F" ){
+    //       female_total2012 += data[i].TotSalary / 1000;
+    //       female_length2012++;
+    //     }
+       
+    //   }
+    //   document.getElementById("total2009").innerHTML = (female_total2009 / female_length2009) * 1000;
+    //   document.getElementById("total2010").innerHTML = (female_total2010 / female_length2010) * 1000;
+    //   document.getElementById("total2011").innerHTML = (female_total2012 / female_length2012) * 1000;
+    //   document.getElementById("bilingual").innerHTML = (bilingual_total / bilingual_length) * 1000;
+    //   document.getElementById("yes_bilingual").innerHTML = (yes_bilingual_total / yes_bilingual_length) * 1000;
+    // })
+
+  //Average salary graph
+  var data;
+  var svg = d3v4.select("#svg"),
+  margin = { top: 15, right: 40, bottom: 30, left:60 },
+  x = d3v4.scalePoint()
+  y = d3v4.scaleLinear();
+
+  var g = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  g.append("g")
+    .attr("class", "axis axis--x");
+
+  g.append("g")
+    .attr("class", "axis axis--y");
+
+  g.append("text")
+  .attr("transform", "rotate(-90)")
+  .attr("y", 6)
+  .attr("dy", "0.71em")
+  .attr("text-anchor", "end") // attribute: start, middle, end
+  .text("USD");
+
+  d3v4.csv("Average_data.csv", function(error, data) {
+        if (error) {
+            throw error;
+        }
+        x.domain([2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021]);
+        y.domain([53000,65000]);
+        draw(data, g);
+  });
+
+  //Interactive graph 
+
+ 
+  //Bounds for both graphs
+  var bounds = svg.node().getBoundingClientRect(),
+  width = bounds.width - margin.left - margin.right,
+  height = bounds.height - margin.top - margin.bottom;
+
+function draw(d, graph) {
+  var data;
+  x.rangeRound([0, width]);
+  y.rangeRound([height, 0]);
+
+  g.select(".axis--x")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
+
+  g.select(".axis--y")
+    .call(d3.axisLeft(y).tickFormat( d3.format("$1") ));
+
+  g.data(d);
+  
+  var line = d3v4.line()
+      .x(function(d, i) { return x(d.Year); }) 
+      .y(function(d, i) { return y(d.Salary); }) 
+
+  var private_line = d3.line()
+  .x(function(d, i) { return x(d.Year); }) 
+  .y(function(d, i) { return y(d.Private_Salary); }) 
+
+var div = d3v4.select("body").append("div") 
+  .attr("class", "tooltip")       
+  .style("opacity", 0);
+
+g.append("path")
+  .datum(d) 
+  .attr("class", "line") 
+  .attr("stroke", "#FEC357")
+  .attr("stroke-width", 3)
+  .attr("fill", "none")
+  .attr("d", line); 
+
+g.append("path")
+.datum(d) 
+.attr("class", "line") 
+.attr("stroke", "red")
+.attr("stroke-width", 3)
+.attr("fill", "none")
+.attr("d", private_line); 
+
+g.append("circle").attr("cx",200).attr("cy",190).attr("r", 6).style("fill", "red")
+g.append("circle").attr("cx",200).attr("cy",210).attr("r", 6).style("fill", "#FEC357")
+g.append("text").attr("x", 220).attr("y", 190).text("Private").style("font-size", "15px").attr("alignment-baseline","middle")
+g.append("text").attr("x", 220).attr("y", 210).text("Public").style("font-size", "15px").attr("alignment-baseline","middle")
+
+}
+
+  var svg1 = d3v4.select("#svg1"),
+            margin1 = 50,
+            width1 = svg1.attr("width") ,
+            height1 = svg1.attr("height");
+
+            var xScale = d3v4.scaleBand().range([0, width]).padding(0.4),
+            yScale = d3v4.scaleLinear().range([height, 0]);
+
+  var g1 = svg1.append("g")
+  .attr("transform", "translate(" + (margin.left + 30) + "," + margin.top + ")");
+
+  g1.append("g")
+    .attr("class", "axis axis--x");
+
+  g1.append("g")
+    .attr("class", "axis axis--y");
+
+  d3v4.csv("interactivedata.csv", function(error, data1) {
+        if (error) {
+            throw error;
+        }
+        xScale.domain([2018,2019,2020,2021]);
+        yScale.domain([56500,62000]);
+        draw1(data1);
+  });
+
+  function draw1(d) {
+
+    var div = d3v4.select("body").append("div") 
+    .attr("class", "tooltip")       
+    .style("opacity", 0);
+    
+    data = d;
+    g1.append("g")
+         .attr("transform", "translate(0," + height + ")")
+         .call(d3v4.axisBottom(xScale));
+
+         g1.append("g")
+         .call(d3v4.axisLeft(yScale).tickFormat(function(d){
+             return "$" + d;
+         }).ticks(10));
+
+         g1.selectAll(".bar")
+         .data(d)
+         .enter().append("rect")
+         .attr("class", "bar")
+         .attr("x", function(d) { return xScale(d.YearSession); })
+         .attr("y", function(d) { return yScale(d.Male_TotSalary); })
+         .attr("width", xScale.bandwidth())
+         .attr("height", function(d) { return height - yScale(d.Male_TotSalary); })
+         .on("mouseover", function(d) {    
+            div.transition()    
+                .duration(200)    
+                .style("opacity", .9);    
+            div.html( "Year" + " "  + (d.YearSession) + " : $"  + d.Male_TotSalary)  
+                .style("left", (d3.event.pageX) + "px")   
+                .style("top", (d3.event.pageY - height/2) + "px");
+            })          
+      .on("mouseout", function(d) {   
+            div.transition()    
+                .duration(500)    
+                .style("opacity", 0); 
+        });
+}
+    
+  d3v4.select("#selectButton").on("change", function(d) {
+   var selectedOption = d3.select(this).property("value")
+    updateLine(data, selectedOption)
+})
+
+function updateLine(d, selectedOption) {
+
+// create line function specifying x position only
+
+if (selectedOption == "Male") {
+  // assign y attribute to the line function, return y value of preference 
+  g1.selectAll(".bar")
+  .transition()
+  .delay(function (d, i) {return i * 50;})
+  .duration(1000)
+  .attr("y", function(d) {return yScale(d.Male_TotSalary);})
+  .attr("height", function(d) { return height - yScale(d.Male_TotSalary); });
+} else if (selectedOption == "Female") {
+  // assign y attribute to the line function, return y value of frequency 
+  g1.selectAll(".bar")
+  .transition()
+  .delay(function (d, i) {return i * 50;})
+  .duration(1000)
+  .attr("y", function(d) {return yScale(d.Female_TotSalary);})
+  .attr("height", function(d) { return height - yScale(d.Female_TotSalary); })
+  .on("mouseover", function(d) {    
+            div.transition()    
+                .duration(200)    
+                .style("opacity", .9);    
+            div.html( "Year" + " "  + (d.YearSession) + " : $"  + d.Female_TotSalary)  
+                .style("left", (d3.event.pageX) + "px")   
+                .style("top", (d3.event.pageY - height/2) + "px");
+            })          
+      .on("mouseout", function(d) {   
+            div.transition()    
+                .duration(500)    
+                .style("opacity", 0); 
+        });
+}
+else if (selectedOption == "Bilingual") {
+  // assign y attribute to the line function, return y value of frequency 
+  g1.selectAll(".bar")
+  .transition()
+  .delay(function (d, i) {return i * 50;})
+  .duration(1000)
+  .attr("y", function(d) {return yScale(d.Bilingual);})
+  .attr("height", function(d) { return height - yScale(d.Bilingual); })
+  .on("mouseover", function(d) {    
+            div.transition()    
+                .duration(200)    
+                .style("opacity", .9);    
+            div.html( "Year" + " "  + (d.YearSession) + " : $"  + d.Bilingual)  
+                .style("left", (d3.event.pageX) + "px")   
+                .style("top", (d3.event.pageY - height/2) + "px");
+            })          
+      .on("mouseout", function(d) {   
+            div.transition()    
+                .duration(500)    
+                .style("opacity", 0); 
+        });
+}
+else if (selectedOption == "Unilingual") {
+  // assign y attribute to the line function, return y value of frequency 
+  g1.selectAll(".bar")
+  .transition()
+  .delay(function (d, i) {return i * 50;})
+  .duration(1000)
+  .attr("y", function(d) {return yScale(d.Unilingual);})
+  .attr("height", function(d) { return height - yScale(d.Unilingual); })
+  .on("mouseover", function(d) {    
+            div.transition()    
+                .duration(200)    
+                .style("opacity", .9);    
+            div.html( "Year" + " "  + (d.YearSession) + " : $"  + d.Unilingual)  
+                .style("left", (d3.event.pageX) + "px")   
+                .style("top", (d3.event.pageY - height/2) + "px");
+            })          
+      .on("mouseout", function(d) {   
+            div.transition()    
+                .duration(500)    
+                .style("opacity", 0); 
+        });
+}
+
+// transit dots
+
+}
+  </script>
+
+</html>
